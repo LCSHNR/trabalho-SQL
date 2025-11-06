@@ -2,12 +2,12 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Tabela CRUD Simples</title>
+  <title>Tabela Excluir, alterar, consultar e incluir</title>
   <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
 
-  <h2>Tabela teste</h2>
+  <h2>Adicionar e Alterar</h2>
   <style>
 
     /* Estilo básico */
@@ -99,7 +99,7 @@
           
   <hr>
 
-    <h2>Tabela de Funções</h2>
+    <h2>Tabela de Funções e Nome</h2>
   <input type="text" id="input-pesquisa" placeholder="Pesquisar na tabela...">
 
     <table>
@@ -113,7 +113,7 @@
        </tbody>
   </table>
   <script>
-    // Espera o DOM (a página) carregar completamente
+  // Espera o DOM (a página) carregar completamente
 document.addEventListener('DOMContentLoaded', () => {
 
   // --- 1. REFERÊNCIAS AOS ELEMENTOS ---
@@ -125,36 +125,57 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSalvar = document.getElementById('btn-salvar');
   const indiceEdicao = document.getElementById('indice-edicao');
 
-  // --- 2. DADOS (Nosso "Banco de Dados" em memória) ---
-  // Começamos com os dados que você forneceu
-  let dados = [
-    { funcao: "Capitão", nome: "Cristiano Ronaldo" },
-    { funcao: "Juiz", nome: "Daronco" },
-    { funcao: "Árbitro", nome: "Varmeira" },
-    { funcao: "Time", nome: "Ibis" }
-  ];
+  // NOVO: Criamos uma chave (nome) para nossos dados no localStorage
+  const CHAVE_STORAGE = 'dadosTabelaFuncoes';
+
+  // --- 2. DADOS (Nosso "Banco de Dados" agora com localStorage) ---
+  
+  // NOVO: Função para carregar os dados
+  function carregarDados() {
+    // Tenta pegar os dados salvos no navegador
+    const dadosSalvos = localStorage.getItem(CHAVE_STORAGE);
+    
+    // Se encontrou dados salvos (if), converte o texto de volta para array
+    if (dadosSalvos) {
+      return JSON.parse(dadosSalvos);
+    } 
+    
+    // Se não (else), usa os seus dados originais como padrão
+    return [
+      { funcao: "Capitão", nome: "Cristiano Ronaldo" },
+      { funcao: "Juiz", nome: "Daronco" },
+      { funcao: "Árbitro", nome: "Varmeira" },
+      { funcao: "Time", nome: "Ibis" }
+    ];
+  }
+
+  // NOVO: Função para salvar os dados
+  function salvarDados() {
+    // Converte o array 'dados' em texto e salva no localStorage
+    localStorage.setItem(CHAVE_STORAGE, JSON.stringify(dados));
+  }
+
+  // NOVO: Inicializa os dados usando a função de carregar
+  let dados = carregarDados();
+
 
   // --- 3. FUNÇÕES PRINCIPAIS ---
 
   /**
   * Função para renderizar (desenhar) a tabela na tela.
-  * Ela lê os dados da variável 'dados' e cria o HTML.
+  * (Nenhuma mudança necessária aqui)
   */
   function renderizarTabela() {
-    // Limpa a tabela antes de desenhar
     tabelaCorpo.innerHTML = '';
     
-    // (CONSULTAR / PESQUISA) Filtra os dados baseado no campo de pesquisa
     const termoPesquisa = inputPesquisa.value.toLowerCase();
 
     const dadosFiltrados = dados.filter(item => {
       return item.funcao.toLowerCase().includes(termoPesquisa) ||
-         item.nome.toLowerCase().includes(termoPesquisa);
+             item.nome.toLowerCase().includes(termoPesquisa);
     });
 
-    // Cria uma linha (<tr>) para cada item nos dados filtrados
     dadosFiltrados.forEach((item, index) => {
-      // Precisamos do índice real nos 'dados' originais, não nos filtrados
       const indiceOriginal = dados.indexOf(item);
 
       const tr = document.createElement('tr');
@@ -174,79 +195,66 @@ document.addEventListener('DOMContentLoaded', () => {
   * Função para lidar com o envio do formulário (Incluir e Alterar)
   */
   function handleFormSubmit(event) {
-    event.preventDefault(); // Impede o recarregamento da página
+    event.preventDefault(); 
 
     const funcao = inputFuncao.value;
     const nome = inputNome.value;
-    const index = indiceEdicao.value; // Pega o índice do campo oculto
+    const index = indiceEdicao.value; 
 
     if (index === '') {
       // --- INCLUIR (CREATE) ---
-      // Adiciona o novo item ao array 'dados'
       dados.push({ funcao, nome });
     } else {
       // --- ALTERAR (UPDATE) ---
-      // Atualiza o item existente no array 'dados'
       dados[index] = { funcao, nome };
       
-      // Limpa o índice e reseta o formulário
       indiceEdicao.value = '';
       btnSalvar.textContent = 'Salvar';
     }
 
-    // Limpa os campos do formulário
     form.reset();
-    // Redesenha a tabela com os dados atualizados
     renderizarTabela();
+    
+    // NOVO: Salva os dados no localStorage após qualquer alteração
+    salvarDados(); 
   }
 
   /**
   * Função para lidar com cliques nos botões de Ação (Alterar e Excluir)
   */
   function handleAcoesClick(event) {
-    const target = event.target; // O elemento clicado
-    const index = target.getAttribute('data-index'); // O 'data-index' do botão
+    const target = event.target;
+    const index = target.getAttribute('data-index');
 
     if (target.classList.contains('btn-excluir')) {
       // --- EXCLUIR (DELETE) ---
-      // Remove o item do array 'dados'
       dados.splice(index, 1);
-      // Redesenha a tabela
       renderizarTabela();
+      
+      // NOVO: Salva os dados no localStorage após excluir
+      salvarDados();
 
     } else if (target.classList.contains('btn-alterar')) {
       // --- PREPARAR PARA ALTERAR (UPDATE) ---
-      // Pega o item do array
       const item = dados[index];
       
-      // Preenche o formulário com os dados do item
       inputFuncao.value = item.funcao;
       inputNome.value = item.nome;
-      indiceEdicao.value = index; // Armazena o índice no campo oculto
+      indiceEdicao.value = index; 
       
-      // Muda o texto do botão
       btnSalvar.textContent = 'Salvar Alteração';
-      
-      // Rola a página para o topo (para o formulário)
       window.scrollTo(0, 0);
     }
   }
 
   // --- 4. EVENT LISTENERS (Monitores de Eventos) ---
-
-  // Monitora o envio do formulário
   form.addEventListener('submit', handleFormSubmit);
-
-  // Monitora cliques na tabela (para os botões de ação)
-  // Usamos "delegação de evento" para monitorar cliques no 'tbody'
   tabelaCorpo.addEventListener('click', handleAcoesClick);
-
-  // Monitora digitação no campo de pesquisa
   inputPesquisa.addEventListener('input', renderizarTabela);
 
 
   // --- 5. INICIALIZAÇÃO ---
-  // Desenha a tabela pela primeira vez quando a página carrega
+  // A tabela agora é desenhada com os dados carregados do localStorage
   renderizarTabela();
 
 });
